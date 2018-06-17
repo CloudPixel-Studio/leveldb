@@ -23,6 +23,7 @@ import org.iq80.leveldb.util.Slice;
 import org.iq80.leveldb.util.Slices;
 import org.iq80.leveldb.util.Snappy;
 import org.iq80.leveldb.util.Zlib;
+import org.iq80.leveldb.util.ZlibRaw;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -36,6 +37,7 @@ import java.util.concurrent.Callable;
 
 import static org.iq80.leveldb.CompressionType.SNAPPY;
 import static org.iq80.leveldb.CompressionType.ZLIB;
+import static org.iq80.leveldb.CompressionType.ZLIB_RAW;
 
 public class MMapTable
         extends Table
@@ -119,6 +121,18 @@ public class MMapTable
                 uncompressedScratch.clear();
 
                 Zlib.uncompress(uncompressedBuffer, uncompressedScratch);
+                uncompressedData = Slices.copiedBuffer(uncompressedScratch);
+            }
+        }
+        else if (blockTrailer.getCompressionType() == ZLIB_RAW) {
+            synchronized (MMapTable.class) {
+                int uncompressedLength = uncompressedLength(uncompressedBuffer);
+                if (uncompressedScratch.capacity() < uncompressedLength) {
+                    uncompressedScratch = ByteBuffer.allocateDirect(uncompressedLength);
+                }
+                uncompressedScratch.clear();
+
+                ZlibRaw.uncompress(uncompressedBuffer, uncompressedScratch);
                 uncompressedData = Slices.copiedBuffer(uncompressedScratch);
             }
         }

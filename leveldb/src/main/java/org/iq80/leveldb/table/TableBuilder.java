@@ -26,6 +26,7 @@ import org.iq80.leveldb.util.Slice;
 import org.iq80.leveldb.util.Slices;
 import org.iq80.leveldb.util.Snappy;
 import org.iq80.leveldb.util.Zlib;
+import org.iq80.leveldb.util.ZlibRaw;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -181,6 +182,21 @@ public class TableBuilder
                 if (compressedSize < raw.length() - (raw.length() / 8)) {
                     blockContents = compressedOutput.slice(0, compressedSize);
                     blockCompressionType = CompressionType.ZLIB;
+                }
+            }
+            catch (IOException ignored) {
+                // compression failed, so just store uncompressed form
+            }
+        }
+        if (compressionType == CompressionType.ZLIB_RAW) {
+            ensureCompressedOutputCapacity(maxCompressedLength(raw.length()));
+            try {
+                int compressedSize = ZlibRaw.compress(raw.getRawArray(), raw.getRawOffset(), raw.length(), compressedOutput.getRawArray(), 0);
+
+                // Don't use the compressed data if compressed less than 12.5%,
+                if (compressedSize < raw.length() - (raw.length() / 8)) {
+                    blockContents = compressedOutput.slice(0, compressedSize);
+                    blockCompressionType = CompressionType.ZLIB_RAW;
                 }
             }
             catch (IOException ignored) {
