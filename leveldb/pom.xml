@@ -117,7 +117,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<proguardVersion>4.8</proguardVersion>
+					<proguardVersion>5.0</proguardVersion>
 					<injar>${project.build.finalName}.jar</injar>
 					<outjar>${project.build.finalName}-slim.jar</outjar>
 					<attach>true</attach>
@@ -168,7 +168,7 @@
 					<dependency>
 						<groupId>net.sf.proguard</groupId>
 						<artifactId>proguard-base</artifactId>
-						<version>4.8</version>
+						<version>5.0</version>
 						<scope>runtime</scope>
 					</dependency>
 				</dependencies>
