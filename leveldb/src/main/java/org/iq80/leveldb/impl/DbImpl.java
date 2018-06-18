@@ -45,8 +45,6 @@ import org.iq80.leveldb.util.SliceInput;
 import org.iq80.leveldb.util.SliceOutput;
 import org.iq80.leveldb.util.Slices;
 import org.iq80.leveldb.util.Snappy;
-import org.iq80.leveldb.util.Zlib;
-import org.iq80.leveldb.util.ZlibRaw;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -120,15 +118,7 @@ public class DbImpl
         requireNonNull(databaseDir, "databaseDir is null");
         this.options = options;
 
-        if (this.options.compressionType() == CompressionType.ZLIB && !Zlib.available()) {
-            // There's little hope to continue.
-            this.options.compressionType(CompressionType.NONE);
-        }
-        else if (this.options.compressionType() == CompressionType.ZLIB_RAW && !ZlibRaw.available()) {
-            // There's little hope to continue.
-            this.options.compressionType(CompressionType.NONE);
-        }
-        else if (this.options.compressionType() == CompressionType.SNAPPY && !Snappy.available()) {
+        if (this.options.compressionType() == CompressionType.SNAPPY && !Snappy.available()) {
             // Disable snappy if it's not available.
             this.options.compressionType(CompressionType.NONE);
         }

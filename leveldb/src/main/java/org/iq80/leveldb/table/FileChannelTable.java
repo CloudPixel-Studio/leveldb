@@ -21,7 +21,6 @@ import org.iq80.leveldb.util.Slice;
 import org.iq80.leveldb.util.Slices;
 import org.iq80.leveldb.util.Snappy;
 import org.iq80.leveldb.util.Zlib;
-import org.iq80.leveldb.util.ZlibRaw;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -74,7 +73,7 @@ public class FileChannelTable
 
         ByteBuffer uncompressedBuffer = read(blockHandle.getOffset(), blockHandle.getDataSize());
         Slice uncompressedData;
-        if (blockTrailer.getCompressionType() == ZLIB) {
+        if (blockTrailer.getCompressionType() == ZLIB || blockTrailer.getCompressionType() == ZLIB_RAW) {
           synchronized (FileChannelTable.class) {
               int uncompressedLength = uncompressedLength(uncompressedBuffer);
               if (uncompressedScratch.capacity() < uncompressedLength) {
@@ -82,21 +81,9 @@ public class FileChannelTable
               }
               uncompressedScratch.clear();
 
-              Zlib.uncompress(uncompressedBuffer, uncompressedScratch);
+              Zlib.uncompress(uncompressedBuffer, uncompressedScratch, blockTrailer.getCompressionType() == ZLIB_RAW);
               uncompressedData = Slices.copiedBuffer(uncompressedScratch);
           }
-        }
-        else if (blockTrailer.getCompressionType() == ZLIB_RAW) {
-            synchronized (FileChannelTable.class) {
-                int uncompressedLength = uncompressedLength(uncompressedBuffer);
-                if (uncompressedScratch.capacity() < uncompressedLength) {
-                    uncompressedScratch = ByteBuffer.allocateDirect(uncompressedLength);
-                }
-                uncompressedScratch.clear();
-
-                ZlibRaw.uncompress(uncompressedBuffer, uncompressedScratch);
-                uncompressedData = Slices.copiedBuffer(uncompressedScratch);
-            }
         }
         else if (blockTrailer.getCompressionType() == SNAPPY) {
           synchronized (FileChannelTable.class) {

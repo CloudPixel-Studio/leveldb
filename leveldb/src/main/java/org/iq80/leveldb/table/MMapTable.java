@@ -23,7 +23,6 @@ import org.iq80.leveldb.util.Slice;
 import org.iq80.leveldb.util.Slices;
 import org.iq80.leveldb.util.Snappy;
 import org.iq80.leveldb.util.Zlib;
-import org.iq80.leveldb.util.ZlibRaw;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -114,7 +113,7 @@ public class MMapTable
         // decompress data
         Slice uncompressedData;
         ByteBuffer uncompressedBuffer = read(this.data, (int) blockHandle.getOffset(), blockHandle.getDataSize());
-        if (blockTrailer.getCompressionType() == ZLIB) {
+        if (blockTrailer.getCompressionType() == ZLIB || blockTrailer.getCompressionType() == ZLIB_RAW) {
           synchronized (MMapTable.class) {
                 int uncompressedLength = uncompressedLength(uncompressedBuffer);
                 if (uncompressedScratch.capacity() < uncompressedLength) {
@@ -122,19 +121,7 @@ public class MMapTable
                 }
                 uncompressedScratch.clear();
 
-                Zlib.uncompress(uncompressedBuffer, uncompressedScratch);
-                uncompressedData = Slices.copiedBuffer(uncompressedScratch);
-            }
-        }
-        else if (blockTrailer.getCompressionType() == ZLIB_RAW) {
-            synchronized (MMapTable.class) {
-                int uncompressedLength = uncompressedLength(uncompressedBuffer);
-                if (uncompressedScratch.capacity() < uncompressedLength) {
-                    uncompressedScratch = ByteBuffer.allocateDirect(uncompressedLength);
-                }
-                uncompressedScratch.clear();
-
-                ZlibRaw.uncompress(uncompressedBuffer, uncompressedScratch);
+                Zlib.uncompress(uncompressedBuffer, uncompressedScratch, blockTrailer.getCompressionType() == ZLIB_RAW);
                 uncompressedData = Slices.copiedBuffer(uncompressedScratch);
             }
         }

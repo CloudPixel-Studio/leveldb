@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.zip.Deflater;
 import java.util.zip.DeflaterInputStream;
+import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 import org.iq80.leveldb.util.Snappy.SPI;
@@ -99,6 +101,13 @@ public class Zlib
    */
   private static class ZLibSPI implements SPI
   {
+    boolean raw;
+
+    ZLibSPI(boolean raw)
+    {
+      this.raw = raw;
+    }
+
     private int copy(InputStream in, OutputStream out) throws IOException
     {
       byte[] buffer = new byte[1024];
@@ -116,7 +125,7 @@ public class Zlib
         throws IOException
     {
       int count = copy(new InflaterInputStream(new ByteBufferBackedInputStream(
-          compressed)), new ByteBufferBackedOutputStream(uncompressed));
+          compressed), new Inflater(raw)), new ByteBufferBackedOutputStream(uncompressed));
       // Prepare the output buffer for reading.
       uncompressed.flip();
       return count;
@@ -128,7 +137,7 @@ public class Zlib
     {
       return copy(
           new InflaterInputStream(new ByteArrayInputStream(input, inputOffset,
-              length)),
+              length), new Inflater(raw)),
           new ByteBufferBackedOutputStream(ByteBuffer.wrap(output,
               outputOffset, output.length - outputOffset)));
     }
@@ -140,7 +149,7 @@ public class Zlib
       // TODO: parameters of Deflater to match MCPE expectations.
       return copy(
           new DeflaterInputStream(new ByteArrayInputStream(input, inputOffset,
-              length)),
+              length), new Deflater(-1, raw)),
           new ByteBufferBackedOutputStream(ByteBuffer.wrap(output,
               outputOffset, output.length - outputOffset)));
     }
@@ -152,7 +161,7 @@ public class Zlib
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       // TODO: parameters of Deflater to match MCPE expectations.
       copy(new DeflaterInputStream(new ByteArrayInputStream(input, 0,
-          input.length)), baos);
+          input.length), new Deflater(-1, raw)), baos);
       return baos.toByteArray();
     }
 
@@ -165,36 +174,53 @@ public class Zlib
   }
 
   private static final SPI ZLIB;
+  private static final SPI ZLIB_RAW;
   static
   {
-    ZLIB = new ZLibSPI();
+    ZLIB = new ZLibSPI(false);
+    ZLIB_RAW = new ZLibSPI(true);
   }
 
-  public static boolean available()
-  {
-    return ZLIB != null;
-  }
-
-  public static void uncompress(ByteBuffer compressed, ByteBuffer uncompressed)
+  public static void uncompress(ByteBuffer compressed, ByteBuffer uncompressed, boolean raw)
       throws IOException
   {
-    ZLIB.uncompress(compressed, uncompressed);
+    if (raw) {
+      ZLIB_RAW.uncompress(compressed, uncompressed);
+    }
+    else {
+      ZLIB.uncompress(compressed, uncompressed);
+    }
   }
 
   public static void uncompress(byte[] input, int inputOffset, int length,
-      byte[] output, int outputOffset) throws IOException
+      byte[] output, int outputOffset, boolean raw) throws IOException
   {
-    ZLIB.uncompress(input, inputOffset, length, output, outputOffset);
+    if (raw) {
+      ZLIB_RAW.uncompress(input, inputOffset, length, output, outputOffset);
+    }
+    else {
+      ZLIB.uncompress(input, inputOffset, length, output, outputOffset);
+    }
   }
 
   public static int compress(byte[] input, int inputOffset, int length,
-      byte[] output, int outputOffset) throws IOException
+      byte[] output, int outputOffset, boolean raw) throws IOException
   {
-    return ZLIB.compress(input, inputOffset, length, output, outputOffset);
+    if (raw) {
+      return ZLIB_RAW.compress(input, inputOffset, length, output, outputOffset);
+    }
+    else {
+      return ZLIB.compress(input, inputOffset, length, output, outputOffset);
+    }
   }
 
-  public static byte[] compress(String text) throws IOException
+  public static byte[] compress(String text, boolean raw) throws IOException
   {
-    return ZLIB.compress(text);
+    if (raw) {
+      return ZLIB_RAW.compress(text);
+    }
+    else {
+      return ZLIB.compress(text);
+    }
   }
 }
