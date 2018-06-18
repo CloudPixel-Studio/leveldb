@@ -17,7 +17,6 @@
  */
 package org.iq80.leveldb.table;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import org.iq80.leveldb.CompressionType;
 import org.iq80.leveldb.Options;
@@ -32,6 +31,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
 import static org.iq80.leveldb.impl.VersionSet.TARGET_FILE_SIZE;
 
 public class TableBuilder
@@ -74,10 +75,10 @@ public class TableBuilder
 
     public TableBuilder(Options options, FileChannel fileChannel, UserComparator userComparator)
     {
-        Preconditions.checkNotNull(options, "options is null");
-        Preconditions.checkNotNull(fileChannel, "fileChannel is null");
+        requireNonNull(options, "options is null");
+        requireNonNull(fileChannel, "fileChannel is null");
         try {
-            Preconditions.checkState(position == fileChannel.position(), "Expected position %s to equal fileChannel.position %s", position, fileChannel.position());
+            checkState(position == fileChannel.position(), "Expected position %s to equal fileChannel.position %s", position, fileChannel.position());
         }
         catch (IOException e) {
             throw Throwables.propagate(e);
@@ -113,17 +114,17 @@ public class TableBuilder
     public void add(BlockEntry blockEntry)
             throws IOException
     {
-        Preconditions.checkNotNull(blockEntry, "blockEntry is null");
+        requireNonNull(blockEntry, "blockEntry is null");
         add(blockEntry.getKey(), blockEntry.getValue());
     }
 
     public void add(Slice key, Slice value)
             throws IOException
     {
-        Preconditions.checkNotNull(key, "key is null");
-        Preconditions.checkNotNull(value, "value is null");
+        requireNonNull(key, "key is null");
+        requireNonNull(value, "value is null");
 
-        Preconditions.checkState(!closed, "table is finished");
+        checkState(!closed, "table is finished");
 
         if (entryCount > 0) {
             assert (userComparator.compare(key, lastKey) > 0) : "key must be greater than last key";
@@ -131,7 +132,7 @@ public class TableBuilder
 
         // If we just wrote a block, we can now add the handle to index block
         if (pendingIndexEntry) {
-            Preconditions.checkState(dataBlockBuilder.isEmpty(), "Internal error: Table has a pending index entry but data block builder is empty");
+            checkState(dataBlockBuilder.isEmpty(), "Internal error: Table has a pending index entry but data block builder is empty");
 
             Slice shortestSeparator = userComparator.findShortestSeparator(lastKey, key);
 
@@ -153,12 +154,12 @@ public class TableBuilder
     private void flush()
             throws IOException
     {
-        Preconditions.checkState(!closed, "table is finished");
+        checkState(!closed, "table is finished");
         if (dataBlockBuilder.isEmpty()) {
             return;
         }
 
-        Preconditions.checkState(!pendingIndexEntry, "Internal error: Table already has a pending index entry to flush");
+        checkState(!pendingIndexEntry, "Internal error: Table already has a pending index entry to flush");
 
         pendingHandle = writeBlock(dataBlockBuilder);
         pendingIndexEntry = true;
@@ -263,7 +264,7 @@ public class TableBuilder
     public void finish()
             throws IOException
     {
-        Preconditions.checkState(!closed, "table is finished");
+        checkState(!closed, "table is finished");
 
         // flush current data block
         flush();
@@ -296,7 +297,7 @@ public class TableBuilder
 
     public void abandon()
     {
-        Preconditions.checkState(!closed, "table is finished");
+        checkState(!closed, "table is finished");
         closed = true;
     }
 

@@ -17,7 +17,6 @@
  */
 package org.iq80.leveldb.table;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import org.iq80.leveldb.impl.SeekingIterable;
 import org.iq80.leveldb.util.Closeables;
@@ -32,6 +31,9 @@ import java.nio.channels.FileChannel;
 import java.util.Comparator;
 import java.util.concurrent.Callable;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+
 public abstract class Table
         implements SeekingIterable<Slice, Slice>
 {
@@ -45,12 +47,11 @@ public abstract class Table
     public Table(String name, FileChannel fileChannel, Comparator<Slice> comparator, boolean verifyChecksums)
             throws IOException
     {
-        Preconditions.checkNotNull(name, "name is null");
-        Preconditions.checkNotNull(fileChannel, "fileChannel is null");
+        requireNonNull(name, "name is null");
+        requireNonNull(fileChannel, "fileChannel is null");
         long size = fileChannel.size();
-        Preconditions.checkArgument(size >= Footer.ENCODED_LENGTH, "File is corrupt: size must be at least %s bytes", Footer.ENCODED_LENGTH);
-        Preconditions.checkArgument(size <= Integer.MAX_VALUE, "File must be smaller than %s bytes", Integer.MAX_VALUE);
-        Preconditions.checkNotNull(comparator, "comparator is null");
+        checkArgument(size >= Footer.ENCODED_LENGTH, "File is corrupt: size must be at least %s bytes", Footer.ENCODED_LENGTH);
+        requireNonNull(comparator, "comparator is null");
 
         this.name = name;
         this.fileChannel = fileChannel;

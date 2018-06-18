@@ -17,21 +17,22 @@
  */
 package org.iq80.leveldb.impl;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.iq80.leveldb.table.UserComparator;
 import org.iq80.leveldb.util.InternalTableIterator;
 import org.iq80.leveldb.util.LevelIterator;
 import org.iq80.leveldb.util.Slice;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.collect.Lists.newArrayList;
-import static org.iq80.leveldb.impl.FileMetaData.GET_LARGEST_USER_KEY;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
 import static org.iq80.leveldb.impl.SequenceNumber.MAX_SEQUENCE_NUMBER;
 import static org.iq80.leveldb.impl.ValueType.VALUE;
 
@@ -46,15 +47,15 @@ public class Level
 
     public Level(int levelNumber, List<FileMetaData> files, TableCache tableCache, InternalKeyComparator internalKeyComparator)
     {
-        Preconditions.checkArgument(levelNumber >= 0, "levelNumber is negative");
-        Preconditions.checkNotNull(files, "files is null");
-        Preconditions.checkNotNull(tableCache, "tableCache is null");
-        Preconditions.checkNotNull(internalKeyComparator, "internalKeyComparator is null");
+        checkArgument(levelNumber >= 0, "levelNumber is negative");
+        requireNonNull(files, "files is null");
+        requireNonNull(tableCache, "tableCache is null");
+        requireNonNull(internalKeyComparator, "internalKeyComparator is null");
 
-        this.files = newArrayList(files);
+        this.files = new ArrayList<>(files);
         this.tableCache = tableCache;
         this.internalKeyComparator = internalKeyComparator;
-        Preconditions.checkArgument(levelNumber >= 0, "levelNumber is negative");
+        checkArgument(levelNumber >= 0, "levelNumber is negative");
         this.levelNumber = levelNumber;
     }
 
@@ -85,7 +86,7 @@ public class Level
             return null;
         }
 
-        List<FileMetaData> fileMetaDataList = Lists.newArrayListWithCapacity(files.size());
+        List<FileMetaData> fileMetaDataList = new ArrayList<>(files.size());
         if (levelNumber == 0) {
             for (FileMetaData fileMetaData : files) {
                 if (internalKeyComparator.getUserComparator().compare(key.getUserKey(), fileMetaData.getSmallest().getUserKey()) >= 0 &&
@@ -96,7 +97,7 @@ public class Level
         }
         else {
             // Binary search to find earliest index whose largest key >= ikey.
-            int index = ceilingEntryIndex(Lists.transform(files, GET_LARGEST_USER_KEY), key.getInternalKey(), internalKeyComparator);
+            int index = ceilingEntryIndex(Lists.transform(files, FileMetaData::getLargest), key.getInternalKey(), internalKeyComparator);
 
             // did we find any files that could contain the key?
             if (index >= files.size()) {
@@ -136,7 +137,7 @@ public class Level
                 // parse the key in the block
                 Entry<InternalKey, Slice> entry = iterator.next();
                 InternalKey internalKey = entry.getKey();
-                Preconditions.checkState(internalKey != null, "Corrupt key for %s", key.getUserKey().toString(UTF_8));
+                checkState(internalKey != null, "Corrupt key for %s", key.getUserKey().toString(UTF_8));
 
                 // if this is a value key (not a delete) and the keys match, return the value
                 if (key.getUserKey().equals(internalKey.getUserKey())) {

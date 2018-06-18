@@ -17,7 +17,6 @@
  */
 package org.iq80.leveldb.impl;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -56,6 +55,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
@@ -69,7 +69,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
 import static org.iq80.leveldb.impl.DbConstants.L0_SLOWDOWN_WRITES_TRIGGER;
 import static org.iq80.leveldb.impl.DbConstants.L0_STOP_WRITES_TRIGGER;
 import static org.iq80.leveldb.impl.DbConstants.NUM_LEVELS;
@@ -96,7 +98,7 @@ public class DbImpl
     private final ReentrantLock mutex = new ReentrantLock();
     private final Condition backgroundCondition = mutex.newCondition();
 
-    private final List<Long> pendingOutputs = newArrayList(); // todo
+    private final List<Long> pendingOutputs = new ArrayList<>(); // todo
 
     private LogWriter log;
 
@@ -114,8 +116,8 @@ public class DbImpl
     public DbImpl(Options options, File databaseDir)
             throws IOException
     {
-        Preconditions.checkNotNull(options, "options is null");
-        Preconditions.checkNotNull(databaseDir, "databaseDir is null");
+        requireNonNull(options, "options is null");
+        requireNonNull(databaseDir, "databaseDir is null");
         this.options = options;
 
         if (this.options.compressionType() == CompressionType.ZLIB && !Zlib.available()) {
@@ -169,8 +171,8 @@ public class DbImpl
 
         // create the database dir if it does not already exist
         databaseDir.mkdirs();
-        Preconditions.checkArgument(databaseDir.exists(), "Database directory '%s' does not exist and could not be created", databaseDir);
-        Preconditions.checkArgument(databaseDir.isDirectory(), "Database directory '%s' is not a directory", databaseDir);
+        checkArgument(databaseDir.exists(), "Database directory '%s' does not exist and could not be created", databaseDir);
+        checkArgument(databaseDir.isDirectory(), "Database directory '%s' is not a directory", databaseDir);
 
         mutex.lock();
         try {
@@ -180,10 +182,10 @@ public class DbImpl
             // verify the "current" file
             File currentFile = new File(databaseDir, Filename.currentFileName());
             if (!currentFile.canRead()) {
-                Preconditions.checkArgument(options.createIfMissing(), "Database '%s' does not exist and the create if missing option is disabled", databaseDir);
+                checkArgument(options.createIfMissing(), "Database '%s' does not exist and the create if missing option is disabled", databaseDir);
             }
             else {
-                Preconditions.checkArgument(!options.errorIfExists(), "Database '%s' exists and the error if exists option is enabled", databaseDir);
+                checkArgument(!options.errorIfExists(), "Database '%s' exists and the error if exists option is enabled", databaseDir);
             }
 
             versions = new VersionSet(databaseDir, tableCache, internalKeyComparator);
@@ -202,7 +204,7 @@ public class DbImpl
             long previousLogNumber = versions.getPrevLogNumber();
             List<File> filenames = Filename.listFiles(databaseDir);
 
-            List<Long> logs = newArrayList();
+            List<Long> logs = new ArrayList<>();
             for (File filename : filenames) {
                 FileInfo fileInfo = Filename.parseFileName(filename);
 
@@ -289,10 +291,10 @@ public class DbImpl
 
     private void deleteObsoleteFiles()
     {
-        Preconditions.checkState(mutex.isHeldByCurrentThread());
+        checkState(mutex.isHeldByCurrentThread());
 
         // Make a set of all of the live files
-        List<Long> live = newArrayList(this.pendingOutputs);
+        List<Long> live = new ArrayList<>(this.pendingOutputs);
         for (FileMetaData fileMetaData : versions.getLiveFiles()) {
             live.add(fileMetaData.getNumber());
         }
@@ -362,10 +364,10 @@ public class DbImpl
 
     public void compactRange(int level, Slice start, Slice end)
     {
-        Preconditions.checkArgument(level >= 0, "level is negative");
-        Preconditions.checkArgument(level + 1 < NUM_LEVELS, "level is greater than or equal to %s", NUM_LEVELS);
-        Preconditions.checkNotNull(start, "start is null");
-        Preconditions.checkNotNull(end, "end is null");
+        checkArgument(level >= 0, "level is negative");
+        checkArgument(level + 1 < NUM_LEVELS, "level is greater than or equal to %s", NUM_LEVELS);
+        requireNonNull(start, "start is null");
+        requireNonNull(end, "end is null");
 
         mutex.lock();
         try {
@@ -389,7 +391,7 @@ public class DbImpl
 
     private void maybeScheduleCompaction()
     {
-        Preconditions.checkState(mutex.isHeldByCurrentThread());
+        checkState(mutex.isHeldByCurrentThread());
 
         if (backgroundCompaction != null) {
             // Already scheduled
@@ -469,7 +471,7 @@ public class DbImpl
     private void backgroundCompaction()
             throws IOException
     {
-        Preconditions.checkState(mutex.isHeldByCurrentThread());
+        checkState(mutex.isHeldByCurrentThread());
 
         compactMemTableInternal();
 
@@ -488,7 +490,7 @@ public class DbImpl
         }
         else if (manualCompaction == null && compaction.isTrivialMove()) {
             // Move file to next level
-            Preconditions.checkState(compaction.getLevelInputs().size() == 1);
+            checkState(compaction.getLevelInputs().size() == 1);
             FileMetaData fileMetaData = compaction.getLevelInputs().get(0);
             compaction.getEdit().deleteFile(compaction.getLevel(), fileMetaData.getNumber());
             compaction.getEdit().addFile(compaction.getLevel() + 1, fileMetaData);
@@ -509,13 +511,13 @@ public class DbImpl
 
     private void cleanupCompaction(CompactionState compactionState)
     {
-        Preconditions.checkState(mutex.isHeldByCurrentThread());
+        checkState(mutex.isHeldByCurrentThread());
 
         if (compactionState.builder != null) {
             compactionState.builder.abandon();
         }
         else {
-            Preconditions.checkArgument(compactionState.outfile == null);
+            checkArgument(compactionState.outfile == null);
         }
 
         for (FileMetaData output : compactionState.outputs) {
@@ -526,9 +528,10 @@ public class DbImpl
     private long recoverLogFile(long fileNumber, VersionEdit edit)
             throws IOException
     {
-        Preconditions.checkState(mutex.isHeldByCurrentThread());
+        checkState(mutex.isHeldByCurrentThread());
         File file = new File(databaseDir, Filename.logFileName(fileNumber));
-        try (FileChannel channel = new FileInputStream(file).getChannel()) {
+        try (FileInputStream fis = new FileInputStream(file);
+                FileChannel channel = fis.getChannel()) {
             LogMonitor logMonitor = LogMonitors.logMonitor();
             LogReader logReader = new LogReader(channel, logMonitor, true, 0);
 
@@ -818,7 +821,7 @@ public class DbImpl
 
     private void makeRoomForWrite(boolean force)
     {
-        Preconditions.checkState(mutex.isHeldByCurrentThread());
+        checkState(mutex.isHeldByCurrentThread());
 
         boolean allowDelay = !force;
 
@@ -867,7 +870,7 @@ public class DbImpl
             }
             else {
                 // Attempt to switch to a new memtable and trigger compaction of old
-                Preconditions.checkState(versions.getPrevLogNumber() == 0);
+                checkState(versions.getPrevLogNumber() == 0);
 
                 // close the existing log
                 try {
@@ -914,7 +917,7 @@ public class DbImpl
     private void compactMemTableInternal()
             throws IOException
     {
-        Preconditions.checkState(mutex.isHeldByCurrentThread());
+        checkState(mutex.isHeldByCurrentThread());
         if (immutableMemTable == null) {
             return;
         }
@@ -946,7 +949,7 @@ public class DbImpl
     private void writeLevel0Table(MemTable mem, VersionEdit edit, Version base)
             throws IOException
     {
-        Preconditions.checkState(mutex.isHeldByCurrentThread());
+        checkState(mutex.isHeldByCurrentThread());
 
         // skip empty mem table
         if (mem.isEmpty()) {
@@ -1034,10 +1037,10 @@ public class DbImpl
     private void doCompactionWork(CompactionState compactionState)
             throws IOException
     {
-        Preconditions.checkState(mutex.isHeldByCurrentThread());
-        Preconditions.checkArgument(versions.numberOfBytesInLevel(compactionState.getCompaction().getLevel()) > 0);
-        Preconditions.checkArgument(compactionState.builder == null);
-        Preconditions.checkArgument(compactionState.outfile == null);
+        checkState(mutex.isHeldByCurrentThread());
+        checkArgument(versions.numberOfBytesInLevel(compactionState.getCompaction().getLevel()) > 0);
+        checkArgument(compactionState.builder == null);
+        checkArgument(compactionState.outfile == null);
 
         // todo track snapshots
         compactionState.smallestSnapshot = versions.getLastSequence();
@@ -1142,8 +1145,8 @@ public class DbImpl
     private void openCompactionOutputFile(CompactionState compactionState)
             throws FileNotFoundException
     {
-        Preconditions.checkNotNull(compactionState, "compactionState is null");
-        Preconditions.checkArgument(compactionState.builder == null, "compactionState builder is not null");
+        requireNonNull(compactionState, "compactionState is null");
+        checkArgument(compactionState.builder == null, "compactionState builder is not null");
 
         mutex.lock();
         try {
@@ -1166,12 +1169,12 @@ public class DbImpl
     private void finishCompactionOutputFile(CompactionState compactionState)
             throws IOException
     {
-        Preconditions.checkNotNull(compactionState, "compactionState is null");
-        Preconditions.checkArgument(compactionState.outfile != null);
-        Preconditions.checkArgument(compactionState.builder != null);
+        requireNonNull(compactionState, "compactionState is null");
+        checkArgument(compactionState.outfile != null);
+        checkArgument(compactionState.builder != null);
 
         long outputNumber = compactionState.currentFileNumber;
-        Preconditions.checkArgument(outputNumber != 0);
+        checkArgument(outputNumber != 0);
 
         long currentEntries = compactionState.builder.getEntryCount();
         compactionState.builder.finish();
@@ -1201,7 +1204,7 @@ public class DbImpl
     private void installCompactionResults(CompactionState compact)
             throws IOException
     {
-        Preconditions.checkState(mutex.isHeldByCurrentThread());
+        checkState(mutex.isHeldByCurrentThread());
 
         // Add compaction outputs
         compact.compaction.addInputDeletions(compact.compaction.getEdit());
@@ -1235,7 +1238,7 @@ public class DbImpl
     @Override
     public long[] getApproximateSizes(Range... ranges)
     {
-        Preconditions.checkNotNull(ranges, "ranges is null");
+        requireNonNull(ranges, "ranges is null");
         long[] sizes = new long[ranges.length];
         for (int i = 0; i < ranges.length; i++) {
             Range range = ranges[i];
@@ -1265,7 +1268,7 @@ public class DbImpl
     {
         private final Compaction compaction;
 
-        private final List<FileMetaData> outputs = newArrayList();
+        private final List<FileMetaData> outputs = new ArrayList<>();
 
         private long smallestSnapshot;
 
