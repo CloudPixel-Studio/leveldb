@@ -14,7 +14,7 @@
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-        <shadeBase>io.github._0x9fff00.leveldb.shaded</shadeBase>
+        <shadeBase>org.iq80.leveldb.shaded</shadeBase>
     </properties>
 
     <dependencies>
