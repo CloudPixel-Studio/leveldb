@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.tinfoiled.mcpe.leveldb</groupId>
+        <groupId>io.github._0x9fff00.leveldb</groupId>
         <artifactId>leveldb-project</artifactId>
         <version>0.10</version>
     </parent>
