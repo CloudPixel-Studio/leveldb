@@ -61,67 +61,9 @@ public final class Snappy
         int maxCompressedLength(int length);
     }
 
-    public static class XerialSnappy
-            implements SPI
-    {
-        static {
-            // Make sure that the JNI libs are fully loaded.
-            try {
-                org.xerial.snappy.Snappy.compress("test");
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public int uncompress(ByteBuffer compressed, ByteBuffer uncompressed)
-                throws IOException
-        {
-            return org.xerial.snappy.Snappy.uncompress(compressed, uncompressed);
-        }
-
-        @Override
-        public int uncompress(byte[] input, int inputOffset, int length, byte[] output, int outputOffset)
-                throws IOException
-        {
-            return org.xerial.snappy.Snappy.uncompress(input, inputOffset, length, output, outputOffset);
-        }
-
-        @Override
-        public int compress(byte[] input, int inputOffset, int length, byte[] output, int outputOffset)
-                throws IOException
-        {
-            return org.xerial.snappy.Snappy.compress(input, inputOffset, length, output, outputOffset);
-        }
-
-        @Override
-        public byte[] compress(String text)
-                throws IOException
-        {
-            return org.xerial.snappy.Snappy.compress(text);
-        }
-
-        @Override
-        public int maxCompressedLength(int length)
-        {
-            return org.xerial.snappy.Snappy.maxCompressedLength(length);
-        }
-    }
-
     public static class IQ80Snappy
             implements SPI
     {
-        static {
-            // Make sure that the library can fully load.
-            try {
-                new IQ80Snappy().compress("test");
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
         @Override
         public int uncompress(ByteBuffer compressed, ByteBuffer uncompressed)
                 throws IOException
@@ -203,24 +145,7 @@ public final class Snappy
     private static final SPI SNAPPY;
 
     static {
-        SPI attempt = null;
-        String[] factories = System.getProperty("leveldb.snappy", "iq80,xerial").split(",");
-        for (int i = 0; i < factories.length && attempt == null; i++) {
-            String name = factories[i];
-            try {
-                name = name.trim();
-                if ("xerial".equals(name.toLowerCase())) {
-                    name = "org.iq80.leveldb.util.Snappy$XerialSnappy";
-                }
-                else if ("iq80".equals(name.toLowerCase())) {
-                    name = "org.iq80.leveldb.util.Snappy$IQ80Snappy";
-                }
-                attempt = (SPI) Thread.currentThread().getContextClassLoader().loadClass(name).newInstance();
-            }
-            catch (Throwable e) {
-            }
-        }
-        SNAPPY = attempt;
+        SNAPPY = new IQ80Snappy();
     }
 
     public static boolean available()
