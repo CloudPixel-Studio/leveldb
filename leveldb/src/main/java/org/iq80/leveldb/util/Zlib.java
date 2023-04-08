@@ -40,6 +40,9 @@ public class Zlib
   private Zlib()
   {
   }
+
+  private static final int DEFAULT_COMPRESSION_LEVEL = 8;
+
   /**
    * From:
    * http://stackoverflow.com/questions/4332264/wrapping-a-bytebuffer-with-
@@ -146,10 +149,9 @@ public class Zlib
     public int compress(byte[] input, int inputOffset, int length,
         byte[] output, int outputOffset) throws IOException
     {
-      // TODO: parameters of Deflater to match MCPE expectations.
       return copy(
           new DeflaterInputStream(new ByteArrayInputStream(input, inputOffset,
-              length), new Deflater(-1, raw)),
+              length), new Deflater(DEFAULT_COMPRESSION_LEVEL, raw)),
           new ByteBufferBackedOutputStream(ByteBuffer.wrap(output,
               outputOffset, output.length - outputOffset)));
     }
@@ -159,9 +161,8 @@ public class Zlib
     {
       byte[] input = text.getBytes();
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      // TODO: parameters of Deflater to match MCPE expectations.
       copy(new DeflaterInputStream(new ByteArrayInputStream(input, 0,
-          input.length), new Deflater(-1, raw)), baos);
+          input.length), new Deflater(DEFAULT_COMPRESSION_LEVEL, raw)), baos);
       return baos.toByteArray();
     }
 

@@ -178,11 +178,8 @@ public class TableBuilder
             try {
                 int compressedSize = Zlib.compress(raw.getRawArray(), raw.getRawOffset(), raw.length(), compressedOutput.getRawArray(), 0, compressionType == CompressionType.ZLIB_RAW);
 
-                // Don't use the compressed data if compressed less than 12.5%,
-                if (compressedSize < raw.length() - (raw.length() / 8)) {
-                    blockContents = compressedOutput.slice(0, compressedSize);
-                    blockCompressionType = compressionType;
-                }
+                blockContents = compressedOutput.slice(0, compressedSize);
+                blockCompressionType = compressionType;
             }
             catch (IOException ignored) {
                 // compression failed, so just store uncompressed form
@@ -193,11 +190,8 @@ public class TableBuilder
             try {
                 int compressedSize = Snappy.compress(raw.getRawArray(), raw.getRawOffset(), raw.length(), compressedOutput.getRawArray(), 0);
 
-                // Don't use the compressed data if compressed less than 12.5%,
-                if (compressedSize < raw.length() - (raw.length() / 8)) {
-                    blockContents = compressedOutput.slice(0, compressedSize);
-                    blockCompressionType = CompressionType.SNAPPY;
-                }
+                blockContents = compressedOutput.slice(0, compressedSize);
+                blockCompressionType = CompressionType.SNAPPY;
             }
             catch (IOException ignored) {
                 // compression failed, so just store uncompressed form
