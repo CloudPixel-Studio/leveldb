@@ -19,10 +19,10 @@ package org.iq80.leveldb.table;
 
 import org.iq80.leveldb.util.Slice;
 import org.iq80.leveldb.util.Slices;
-import org.iq80.leveldb.util.Snappy;
 import org.iq80.leveldb.util.Zlib;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Comparator;
@@ -86,16 +86,7 @@ public class FileChannelTable
           }
         }
         else if (blockTrailer.getCompressionType() == SNAPPY) {
-          synchronized (FileChannelTable.class) {
-              int uncompressedLength = uncompressedLength(uncompressedBuffer);
-              if (uncompressedScratch.capacity() < uncompressedLength) {
-                  uncompressedScratch = ByteBuffer.allocateDirect(uncompressedLength);
-              }
-              uncompressedScratch.clear();
-
-              Snappy.uncompress(uncompressedBuffer, uncompressedScratch);
-              uncompressedData = Slices.copiedBuffer(uncompressedScratch);
-          }
+          throw new UnsupportedEncodingException("snappy compression is unsupported");
         }
         else {
             uncompressedData = Slices.copiedBuffer(uncompressedBuffer);

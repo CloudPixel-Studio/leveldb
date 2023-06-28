@@ -29,8 +29,6 @@ import java.util.zip.DeflaterInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import org.iq80.leveldb.util.Snappy.SPI;
-
 /**
  * Some glue code that uses the java.util.zip classes to implement ZLIB
  * compression for leveldb.
@@ -39,6 +37,23 @@ public class Zlib
 {
   private Zlib()
   {
+  }
+
+  public interface SPI
+  {
+    int uncompress(ByteBuffer compressed, ByteBuffer uncompressed)
+            throws IOException;
+
+    int uncompress(byte[] input, int inputOffset, int length, byte[] output, int outputOffset)
+            throws IOException;
+
+    int compress(byte[] input, int inputOffset, int length, byte[] output, int outputOffset)
+            throws IOException;
+
+    byte[] compress(String text)
+            throws IOException;
+
+    int maxCompressedLength(int length);
   }
 
   private static final int DEFAULT_COMPRESSION_LEVEL = 8;

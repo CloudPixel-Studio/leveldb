@@ -10,7 +10,7 @@
 
     <groupId>io.github._0x9fff00.leveldb</groupId>
     <artifactId>leveldb-project</artifactId>
-    <version>0.10.1</version>
+    <version>0.10.2</version>
     <packaging>pom</packaging>
 
     <description>Port of LevelDB to Java</description>

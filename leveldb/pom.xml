@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.github._0x9fff00.leveldb</groupId>
         <artifactId>leveldb-project</artifactId>
-        <version>0.10.1</version>
+        <version>0.10.2</version>
     </parent>
 
     <artifactId>leveldb</artifactId>
@@ -22,13 +22,6 @@
         <dependency>
             <groupId>io.github._0x9fff00.leveldb</groupId>
             <artifactId>leveldb-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.iq80.snappy</groupId>
-            <artifactId>snappy</artifactId>
-            <version>0.4</version>
-            <optional>true</optional>
         </dependency>
 
         <dependency>

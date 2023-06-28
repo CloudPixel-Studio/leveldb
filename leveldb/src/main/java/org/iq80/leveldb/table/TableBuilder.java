@@ -23,10 +23,10 @@ import org.iq80.leveldb.Options;
 import org.iq80.leveldb.util.PureJavaCrc32C;
 import org.iq80.leveldb.util.Slice;
 import org.iq80.leveldb.util.Slices;
-import org.iq80.leveldb.util.Snappy;
 import org.iq80.leveldb.util.Zlib;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -186,16 +186,7 @@ public class TableBuilder
             }
         }
         else if (compressionType == CompressionType.SNAPPY) {
-            ensureCompressedOutputCapacity(maxCompressedLength(raw.length()));
-            try {
-                int compressedSize = Snappy.compress(raw.getRawArray(), raw.getRawOffset(), raw.length(), compressedOutput.getRawArray(), 0);
-
-                blockContents = compressedOutput.slice(0, compressedSize);
-                blockCompressionType = CompressionType.SNAPPY;
-            }
-            catch (IOException ignored) {
-                // compression failed, so just store uncompressed form
-            }
+            throw new UnsupportedEncodingException("snappy compression is unsupported");
         }
 
         // create block trailer
